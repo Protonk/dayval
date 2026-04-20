@@ -55,10 +55,19 @@ is what we characterize):
 | Name | Layout | Bias | Pos. normals | Status |
 |---|---|---|---|---|
 | FP4 E2M1 | 1.2.1 | 1 | 4 | OCP MXFP4, NVFP4 — production (Blackwell) |
-| FP6 E2M3 | 1.2.3 | 1 | 12 | OCP MXFP6 — production (MI355, B200) |
+| FP6 E2M3 | 1.2.3 | 1 | 16 | OCP MXFP6 — production (MI355, B200) |
 | FP6 E3M2 | 1.3.2 | 3 | 24 | OCP MXFP6 — production |
 | FP8 E4M3 | 1.4.3 | 7 | 112 | OCP/NVIDIA/Arm/Intel — production (H100+) |
-| FP8 E5M2 | 1.5.2 | 15 | 112 | OCP/NVIDIA/Arm/Intel — production (H100+) |
+| FP8 E5M2 | 1.5.2 | 15 | 120 | OCP/NVIDIA/Arm/Intel — production (H100+) |
+
+Positive-normal counts are IEEE-style: biased exponent in `[1, 2^E − 2]`,
+all mantissas, reserving `2^E − 1` for inf/NaN. OCP MX semantics for FP4
+E2M1, FP6 E2M3, FP6 E3M2, and FP8 E4M3 encode normals in the all-ones
+exponent too (no ±∞; NaN reserved only at the top pattern of E4M3),
+which would give counts of 6 / 24 / 28 / 119 respectively. We use IEEE-
+style enumeration throughout — the all-ones exponent is excluded as a
+coefficient/input candidate but the kernel still evaluates correctly
+when intermediate results land there.
 
 ## Methodology
 
