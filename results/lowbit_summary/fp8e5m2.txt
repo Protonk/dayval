@@ -1,0 +1,42 @@
+FORMAT: FP8 E5M2
+Layout: 1.5.2, bias 15
+Positive normals (IEEE-style): 120
+
+==== RSQRT (1/sqrt(x)) ====
+Format-intrinsic floor:
+  eps_floor   = 8.253175473e-02
+  worst input = 0x0a
+
+Algorithm tiers (global optima by exhaustive search):
+  Tier             | ops | K    | coefs                                    | eps         | x*
+  -------------------------------------------------------------------------------------------
+  T0_monic         | 0   | 0x59 | —                                        | 1.3397e-01 | 0x0a
+  T0_scale         | 1   | 0x40 | +80(0x55)                                | 1.3397e-01 | 0x0a
+  T1_monic         | 3   | 0x40 | +80(0x55)                                | 1.3397e-01 | 0x0a
+  T1_gen           | 4   | 0x43 | +64(0x54) -28672(0xf7)                   | 1.1803e-01 | 0x05
+
+Implementation variants (M3), applied to T1_gen:
+  baseline: K=0x43 coarse=shift_then_sub refine=xyyc1 eps=1.1803e-01
+  C' extra bit (§9.2)           : eps = 8.2532e-02  Δε = -3.550e-02  (best coarse = sub_then_shift_2K)
+  best refine ordering (§9.2)   : eps = 1.1803e-01  Δε = +0.000e+00  (best = xyyc1)
+  parity switch (§9.3)          : eps = 1.1803e-01  Δε = +1.067e-01  (s_best=0 eps=1.180e-01, s_other=-1 eps=2.247e-01; Δε is the penalty for choosing the wrong parity)
+
+==== RECIPROCAL (1/x) ====
+Format-intrinsic floor:
+  eps_floor   = 2.500000000e-01
+  worst input = 0x79
+
+Algorithm tiers (global optima by exhaustive search):
+  Tier             | ops | K    | coefs                                    | eps         | x*
+  -------------------------------------------------------------------------------------------
+  T0_monic         | 0   | 0x7b | —                                        | 1.0000e+00 | 0x7b
+  T0_scale         | 1   | 0x7d | +0.375(0x36)                             | 2.5000e-01 | 0x79
+  T1_monic         | 2   | 0x7c | +2.5(0x41)                               | 7.5000e-01 | 0x7b
+  T1_gen           | 3   | 0x7c | +0.625(0x39) -0.03125(0xa8)              | 2.5000e-01 | 0x75
+
+Implementation variants (M3), applied to T1_gen:
+  baseline: K=0x7c coarse=no_shift refine=c1xyy eps=2.5000e-01
+  C' extra bit (§9.2)           : eps = 2.5000e-01  Δε = +0.000e+00  (N/A for reciprocal (no shift))
+  best refine ordering (§9.2)   : eps = 2.5000e-01  Δε = +0.000e+00  (best = c1xyy)
+  parity switch (§9.3)          : eps = inf  Δε = nan  (s_best=-1 eps=inf, s_other=0 eps=inf; Δε is the penalty for choosing the wrong parity)
+

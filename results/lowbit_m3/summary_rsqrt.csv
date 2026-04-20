@@ -1,0 +1,2 @@
+format_name,target,eps_floor,eps_T0_monic,eps_T1_gen,K_T1_gen_hex,gap_to_floor,lut_entries_for_floor
+FP6 E3M2,rsqrt,0.08253175473054819,0.1339745962155614,0.1180339887498949,0x13,0.03550223401934671,24

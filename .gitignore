@@ -16,6 +16,4 @@ dist/
 target/
 Cargo.lock
 
-results/
-*.csv
 *.npy
