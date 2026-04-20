@@ -107,36 +107,18 @@ produce `ε = ∞`, which is a negative-result data point: Day's §9.1
 magic-constant formula is not directly usable at these widths
 without tuning.
 
-## Paper and plan corrections surfaced by the implementation
+## Plan correction surfaced by the implementation
 
-Two mechanical corrections came out of reproducing the paper's
-numbers:
+The standalone low-bit plan's target-formats table listed FP6 E2M3
+= 12 and FP8 E5M2 = 112 positive normals, which disagree with both
+IEEE-style enumeration (16 / 120) and OCP MX semantics (24 / 120).
+Commit `89e8db3` corrected these and added a paragraph clarifying
+the enumeration convention; that paragraph now lives in
+`FRGR-PLAN.md`.
 
-**Day eq (57) ε has a last-digit typo.** The paper prints
-`ε ≈ 6.50070298 × 10⁻⁴`; the true minimax value to 13 significant
-figures is `6.500702958850 × 10⁻⁴`, verified by direct
-equioscillation check at 100 decimal-place precision and by two
-independent methods (the eq (56) closed form and a Remez iteration
-implemented in mpmath). My rounded-to-9sf value is `6.50070296e-4`,
-one unit in the last digit below the paper's printed value. The
-test `test_frsr_s_minus_one_eq57` gates on the true value with a
-tolerance of `1e-15`.
-
-**Listing 5's coefficients in the rendered PDF of the paper are
-unreadable on screen at typical DPI.** I initially OCRed
-`1.1891763f` and `0.24885956f`, which reproduce peak error
-`7.484 × 10⁻⁴` — close to but not Day's published `6.501791 × 10⁻⁴`.
-The arxiv LaTeX source (downloaded and kept in `sources/`) has
-`1.1893165f` and `0.24889956f`, which reproduce the published peak
-exactly at witness `x* = 0x01401a9f` (verified against a compiled C
-kernel with `-mno-fma -fno-fast-math`).
-
-**Reference-arm target-formats table** (originally in the standalone
-low-bit plan) listed FP6 E2M3 = 12 and FP8 E5M2 = 112 positive
-normals, which disagree with both IEEE-style enumeration (16 / 120)
-and OCP MX semantics (24 / 120). Commit `89e8db3` corrected these
-and added a paragraph clarifying the enumeration convention; that
-paragraph now lives in `FRGR-PLAN.md`.
+Day [2023]'s own errata (eq (57) ε last-digit typo, Listing 5
+coefficients unreadable in the rendered PDF) are catalogued
+separately in `DAY-2023-ERRATA.md`.
 
 ## Outstanding
 

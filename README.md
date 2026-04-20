@@ -9,6 +9,7 @@ arm) or `scripts/run_lowbit.py` (reference arm). Gates in `tests/`.
 ```
 FRGR-PLAN.md         plan
 RESULTS.md           findings writeup
+DAY-2023-ERRATA.md   Day [2023] errata we surfaced
 dayval/              Python package (algorithm3, minifloat, frsr,
                      magic, sweep, lowbit, specsheet, tables)
 rust_kernel/         PyO3 extension (Rust)
