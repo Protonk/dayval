@@ -74,3 +74,35 @@ def test_reciprocal_floor_bound():
         r = lowbit.tier_exhaustive(fmt, "recip", tier)
         assert r.eps >= floor.eps_floor - 1e-12, (
             f"{tier} eps={r.eps:.6e} violates floor {floor.eps_floor:.6e}")
+
+
+def test_m3_ablation_rsqrt_fp6():
+    """M3 on T1_gen at FP6 E3M2 rsqrt should produce three levers, all
+    with non-negative δε (levers can't improve on the exhaustive baseline
+    for the same (K, coefs), but the parity-switch lever's δ is the
+    penalty between parities, not a baseline delta)."""
+    fmt = mf.FP6_E3M2
+    base = lowbit.tier_exhaustive(fmt, "rsqrt", "T1_gen")
+    m3 = lowbit.m3_ablation(fmt, "rsqrt", base)
+    assert m3.baseline_eps == pytest.approx(base.eps)
+    assert len(m3.levers) == 3
+    names = [l.name for l in m3.levers]
+    assert "C' extra bit (§9.2)" in names
+    assert "best refine ordering (§9.2)" in names
+    assert "parity switch (§9.3)" in names
+    # The first two levers reference the same (K, coefs); they cannot
+    # improve on the already-optimal canonical configuration.
+    for lever in m3.levers[:2]:
+        assert lever.delta >= -1e-12, (
+            f"{lever.name} improved on canonical baseline unexpectedly: "
+            f"δε={lever.delta}")
+
+
+def test_m3_ablation_recip_c_prime_na():
+    """Reciprocal has no shift, so the C' extra bit lever reports N/A."""
+    fmt = mf.FP6_E3M2
+    base = lowbit.tier_exhaustive(fmt, "recip", "T1_gen")
+    m3 = lowbit.m3_ablation(fmt, "recip", base)
+    cp = next(l for l in m3.levers if l.name.startswith("C' extra bit"))
+    assert cp.delta == 0.0
+    assert "N/A" in cp.detail

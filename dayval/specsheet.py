@@ -2,9 +2,8 @@
 
 Formats one sheet per format covering both rsqrt (1/√x) and reciprocal
 (1/x), per the plan's template. §9 implementation-variant ablation
-(M3) is stubbed — it runs on the best tier and reports deltas if the
-caller populates `ablation` in the sheet; the spec-sheet framework is
-here to be filled in as §9 variants are added.
+(M3) is computed on the T1_gen baseline by `lowbit.m3_ablation` and
+rendered in the "Implementation variants" block.
 """
 from __future__ import annotations
 
@@ -20,7 +19,7 @@ class SheetSection:
     target: str                  # "rsqrt" | "recip"
     floor: lowbit.FormatFloor
     tiers: list[lowbit.TierResult] = field(default_factory=list)
-    ablation: dict = field(default_factory=dict)  # lever name -> Δε (TODO)
+    m3: Optional[lowbit.M3Result] = None
 
 
 @dataclass
@@ -79,13 +78,26 @@ def format_sheet(sheet: Sheet) -> str:
                 )
             buf.write("\n")
 
-        if section.ablation:
-            buf.write("Implementation variants (M3):\n")
-            for name, delta in section.ablation.items():
-                buf.write(f"  {name:<30}: Δε = {delta:+.3e}\n")
+        if section.m3 and section.m3.levers:
+            m3 = section.m3
+            buf.write(
+                f"Implementation variants (M3), applied to {m3.tier}:\n"
+            )
+            buf.write(
+                f"  baseline: K=0x{m3.baseline_K:0{hw}x} "
+                f"coarse={m3.baseline_coarse} refine={m3.baseline_refine} "
+                f"eps={m3.baseline_eps:.4e}\n"
+            )
+            for lever in m3.levers:
+                sign = "+" if lever.delta >= 0 else ""
+                buf.write(
+                    f"  {lever.name:<30}: eps = {lever.eps:.4e}  "
+                    f"Δε = {sign}{lever.delta:.3e}  ({lever.detail})\n"
+                )
             buf.write("\n")
         else:
-            buf.write("Implementation variants (M3): not yet populated.\n\n")
+            buf.write("Implementation variants (M3): not populated "
+                      "(baseline tier lacks an M3 definition).\n\n")
 
     if sheet.notes:
         buf.write("==== Notes ====\n")
@@ -97,15 +109,22 @@ def format_sheet(sheet: Sheet) -> str:
 
 def build_sheet(fmt: mf.Format, format_name: str,
                 tiers: list[str] = lowbit.RSQRT_TIERS,
-                notes: Optional[list[str]] = None) -> Sheet:
-    """Run M1 (floor) + M2 (all tiers) for both rsqrt and recip at `fmt`."""
+                notes: Optional[list[str]] = None,
+                run_m3: bool = True) -> Sheet:
+    """Run M1 (floor) + M2 (all tiers) + optional M3 (§9 levers on T1_gen)
+    for both rsqrt and recip at `fmt`."""
     sheet = Sheet(format_name=format_name, fmt=fmt, notes=notes or [])
     for target in ("rsqrt", "recip"):
         floor = lowbit.format_floor(fmt, target)
         section = SheetSection(target=target, floor=floor)
+        t1gen_result = None
         for tier in tiers:
             r = lowbit.tier_exhaustive(fmt, target, tier)
             section.tiers.append(r)
+            if tier == "T1_gen":
+                t1gen_result = r
+        if run_m3 and t1gen_result is not None:
+            section.m3 = lowbit.m3_ablation(fmt, target, t1gen_result)
         sheet.sections.append(section)
     return sheet
 
