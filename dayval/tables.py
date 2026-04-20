@@ -25,8 +25,10 @@ PRIMARY_COLUMNS = [
     "eps_real_plus_Cprime",
     "eps_real_plus_orderings",
     "eps_real_plus_coef_tune",
-    "eps_opt",
-    "tie_set_size", "x_star_opt",
+    "eps_opt", "eps_opt_kind",
+    "tie_set_size", "near_optimal_band_count",
+    "second_worst_x", "second_worst_eps",
+    "x_star_opt",
 ]
 
 
@@ -38,12 +40,13 @@ def write_primary(rows: Iterable[SweepRow], path: Path | str) -> None:
         for r in rows:
             d = asdict(r)
             # Render K columns as hex for easy cross-reference with the paper.
+            hw = (d["width"] + 3) // 4
             row = [
                 d["format_name"], d["E"], d["M"], d["bias"], d["width"],
                 d["positive_normals"],
-                f"0x{d['K_s_minus_one']:0{(d['width']+3)//4}x}",
-                f"0x{d['K_s_zero']:0{(d['width']+3)//4}x}",
-                f"0x{d['K_opt']:0{(d['width']+3)//4}x}",
+                f"0x{d['K_s_minus_one']:0{hw}x}",
+                f"0x{d['K_s_zero']:0{hw}x}",
+                f"0x{d['K_opt']:0{hw}x}",
                 d["winning_s"],
                 f"{d['eps_theory']:.9e}",
                 f"{d['eps_real_analytic_winning']:.9e}",
@@ -51,8 +54,12 @@ def write_primary(rows: Iterable[SweepRow], path: Path | str) -> None:
                 f"{d['eps_real_plus_orderings']:.9e}",
                 f"{d['eps_real_plus_coef_tune']:.9e}",
                 f"{d['eps_opt']:.9e}",
+                d["eps_opt_kind"],
                 d["tie_set_size"],
-                f"0x{d['x_star_opt']:0{(d['width']+3)//4}x}",
+                d["near_optimal_band_count"],
+                f"0x{d['second_worst_x']:0{hw}x}",
+                f"{d['second_worst_eps']:.9e}",
+                f"0x{d['x_star_opt']:0{hw}x}",
             ]
             w.writerow(row)
 
@@ -97,9 +104,17 @@ def write_q3_degeneracy(rows: Iterable[SweepRow], path: Path | str) -> None:
     with path.open("w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["format_name", "E", "M", "bias",
-                    "K_opt_hex", "tie_set_size", "x_star_opt_hex"])
+                    "K_opt_hex", "eps_opt_kind",
+                    "tie_set_size", "near_optimal_band_count",
+                    "second_worst_x_hex", "second_worst_eps",
+                    "x_star_opt_hex"])
         for r in rows:
+            hw = (r.width + 3) // 4
             w.writerow([r.format_name, r.E, r.M, r.bias,
-                        f"0x{r.K_opt:0{(r.width+3)//4}x}",
+                        f"0x{r.K_opt:0{hw}x}",
+                        r.eps_opt_kind,
                         r.tie_set_size,
-                        f"0x{r.x_star_opt:0{(r.width+3)//4}x}"])
+                        r.near_optimal_band_count,
+                        f"0x{r.second_worst_x:0{hw}x}",
+                        f"{r.second_worst_eps:.6e}",
+                        f"0x{r.x_star_opt:0{hw}x}"])

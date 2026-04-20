@@ -195,31 +195,46 @@ class M3Result:
 
 
 def _eval_with(fmt, target, tier, K, coefs, coarse, refine):
-    """Evaluate tier_peak, but through refine_kernel path when we need a
-    non-canonical refine ordering. For T1_gen, refine ordering is part of
-    the polynomial evaluation; tier_peak uses a canonical ordering per
-    target, so for ordering sweeps we need to fall back to the FRSR
-    refine (only applicable for T1_gen / rsqrt). Reciprocal refinement
-    orderings would require a similar enumerator in Rust; current
-    implementation uses only the canonical ordering for recip. Returns
-    None to signal 'not applicable' when the kernel can't evaluate the
-    requested ordering."""
+    """Evaluate peak ε for one (K, coefs) under the given (coarse, refine).
+    Returns None when the kernel can't evaluate the requested ordering.
+
+    - rsqrt: peak_error_single covers all 9 refine orderings from §9.2.
+    - recip: tier_peak is used, which evaluates the kernel's fixed canonical
+      ordering (y * (c0 + c1*z), z = x*y). The 9-way refine enumeration
+      collapses for FRCP (no y²), so non-canonical `refine` returns None.
+      The canonical path is computable — which is what the parity-switch
+      lever (and, in future, a recip ordering enumerator) need.
+    """
     from . import frsr  # circular-avoid import
     if tier != "T1_gen":
         return None
     x_bits = mf.positive_normals_bits(fmt)
+    c0 = float(mf.bits_to_float(np.uint32(int(
+        mf.float_to_bits(np.float64(coefs[0]), fmt))), fmt))
+    c1 = float(mf.bits_to_float(np.uint32(int(
+        mf.float_to_bits(np.float64(coefs[1]), fmt))), fmt))
     if target == "rsqrt":
-        c0 = float(mf.bits_to_float(np.uint32(int(mf.float_to_bits(np.float64(coefs[0]), fmt))), fmt))
-        c1 = float(mf.bits_to_float(np.uint32(int(mf.float_to_bits(np.float64(coefs[1]), fmt))), fmt))
         if _HAVE_RUST:
-            eps, xs = dayval_rust.peak_error_single(
+            eps, _ = dayval_rust.peak_error_single(
                 x_bits, K & fmt.all_mask, c0, c1,
                 fmt.E, fmt.M, fmt.bias, coarse, refine,
             )
         else:
-            eps, xs = frsr.peak_error(
+            eps, _ = frsr.peak_error(
                 x_bits, K & fmt.all_mask, c0, c1, fmt, coarse, refine,
             )
+        return float(eps)
+    if target == "recip":
+        if refine != CANONICAL_REFINE["recip"]:
+            return None
+        if not _HAVE_RUST:
+            return None
+        eps, _ = dayval_rust.tier_peak(
+            x_bits, K & fmt.all_mask,
+            [c0, c1],
+            fmt.E, fmt.M, fmt.bias,
+            "T1_gen", coarse, "recip",
+        )
         return float(eps)
     return None
 

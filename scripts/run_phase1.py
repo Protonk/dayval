@@ -75,6 +75,7 @@ def main() -> int:
             # Day Listing 5 as the fp32 "optimum" reference.
             row.K_opt = 0x5F5FFF00
             row.eps_opt = 6.501791e-4
+            row.eps_opt_kind = "replication"
             row.x_star_opt = 0x01401a9f
             row.notes.append("fp32 is replication-only; K_opt and eps_opt from Day Listing 5")
             rows.append(row)

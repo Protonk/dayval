@@ -42,5 +42,5 @@ Implementation variants (M3), applied to T1_gen:
   baseline: K=0x5 coarse=no_shift refine=c1xyy eps=1.0000e+00
   C' extra bit (§9.2)           : eps = 1.0000e+00  Δε = +0.000e+00  (N/A for reciprocal (no shift))
   best refine ordering (§9.2)   : eps = 1.0000e+00  Δε = +0.000e+00  (best = c1xyy)
-  parity switch (§9.3)          : eps = inf  Δε = nan  (s_best=-1 eps=inf, s_other=0 eps=inf; Δε is the penalty for choosing the wrong parity)
+  parity switch (§9.3)          : eps = 1.0000e+00  Δε = +inf  (s_best=0 eps=1.000e+00, s_other=-1 eps=inf; Δε is the penalty for choosing the wrong parity)
 

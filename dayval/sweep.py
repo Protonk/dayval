@@ -5,15 +5,18 @@ Design:
 - Every sweep function takes a `Format` and returns a list of `RowPartial`
   records. Records accumulate monotonically (B1 → B2 → B3) with ablation
   columns filled in as the ladder proceeds.
-- fp4/fp6/fp8 go through the `exhaustive` path which enumerates all
-  (K, c0_bits, c1_bits) triples using the Python kernel — these formats have
-  < 10^7 configurations each and don't need Rust.
+- fp4/fp6/fp8 route through `lowbit.tier_exhaustive` (Rust-parallelised) for
+  the full (K, c0_bits, c1_bits) enumeration — true global optimum per plan
+  §B2. `eps_opt_kind` on the SweepRow is tagged "exhaustive" for these rows.
 - fp16..fp24 go through `k_only_plus_local`: one K-only pass per parity with
   coefficients pinned at the format-quantised analytic values, plus an 8-seed
   joint local search per parity. The K-only pass uses the Rust kernel
   `k_sweep`; local search is Python (few hundred steps, not a bottleneck).
+  Tagged "local" — results are not globally optimal.
 - fp32 is a replication check: evaluate Day Listing 5 at (K=0x5F5FFF00,
-  c0=1.1893165, c1=-0.24889956) and assert eps == 6.501791e-4.
+  c0=1.1893165, c1=-0.24889956) and assert eps == 6.501791e-4. Tagged
+  "replication" — the stored eps_opt is the paper's tuned value, not a
+  pipeline-derived optimum.
 
 Witness records (B4) are attached to every optimum stored: worst-case x,
 exact minimizer set (K's tying the best peak eps), near-optimal band (K's
@@ -91,7 +94,11 @@ class SweepRow:
     eps_real_plus_orderings: float = float("nan")
     eps_real_plus_coef_tune: float = float("nan")
     eps_opt: float = float("nan")
+    eps_opt_kind: str = ""         # "exhaustive" | "local" | "replication"
     tie_set_size: int = 0
+    near_optimal_band_count: int = 0
+    second_worst_x: int = 0
+    second_worst_eps: float = 0.0
     x_star_opt: int = 0
     notes: list = field(default_factory=list)
 
@@ -397,21 +404,34 @@ def phase1_row(fmt: mf.Format, *, format_name: str = "") -> SweepRow:
                 best_ord = eps
     row.eps_real_plus_orderings = best_ord
 
-    # B2 / B3 ladder step 4: joint local search (coefficient fine-tune + K tune).
-    k_opt, c0_opt_bits, c1_opt_bits, eps_opt, xstar = joint_local_search(
-        fmt,
-        seed_K=winning.K,
-        seed_c0_bits=winning.c0_bits,
-        seed_c1_bits=winning.c1_bits,
-    )
+    # B2 / B3 ladder step 4: eps_opt depends on format width per plan §B2.
+    #  - fp4/fp6/fp8: exhaustive (K, c0, c1) via lowbit.tier_exhaustive.
+    #    True global optimum. eps_opt_kind = "exhaustive".
+    #  - fp16+: joint local search from the analytic seed, labeled "local".
+    if fmt.width <= 8 and _HAVE_RUST:
+        from . import lowbit
+        r = lowbit.tier_exhaustive(fmt, "rsqrt", "T1_gen")
+        k_opt = r.K
+        c0_opt_bits, c1_opt_bits = r.coefs_bits
+        eps_opt = r.eps
+        xstar = r.x_star
+        row.eps_opt_kind = "exhaustive"
+    else:
+        k_opt, c0_opt_bits, c1_opt_bits, eps_opt, xstar = joint_local_search(
+            fmt,
+            seed_K=winning.K,
+            seed_c0_bits=winning.c0_bits,
+            seed_c1_bits=winning.c1_bits,
+        )
+        row.eps_opt_kind = "local"
     row.eps_real_plus_coef_tune = eps_opt
     row.K_opt = k_opt
     row.eps_opt = eps_opt
     row.x_star_opt = xstar
 
-    # Tie-set / near-optimal band requires a full K sweep. For tiny formats
-    # we could also do a full coef sweep — skipped in the first pass since
-    # it multiplies memory. For fp16+ the K-only sweep below fills this in.
+    # B4: tie-set size, near-optimal band, second-worst witness. K-sweep
+    # pins (c0, c1) at the step-4 optimum; tie / near-band are conditional
+    # on those coefficients (documented in the CSV via eps_opt_kind).
     if fmt.width <= 20 and _HAVE_RUST:
         c0 = float(mf.bits_to_float(np.uint32(c0_opt_bits), fmt))
         c1 = float(mf.bits_to_float(np.uint32(c1_opt_bits), fmt))
@@ -419,7 +439,19 @@ def phase1_row(fmt: mf.Format, *, format_name: str = "") -> SweepRow:
         try:
             _, wr = witness(eps_arr, ks, xs_arr)
             row.tie_set_size = wr.exact_minimizer_count
+            row.near_optimal_band_count = wr.near_optimal_band_count
         except ValueError:
             pass
+        # Second-worst: re-evaluate per-input error at K_opt (one pass over
+        # positive normals) and pick rank 2.
+        x_bits_all = mf.positive_normals_bits(fmt)
+        err = frsr.relative_error(
+            x_bits_all, k_opt, c0, c1, fmt, "shift_then_sub", "xyyc1",
+        )
+        err_safe = np.where(np.isfinite(err), err, -np.inf)
+        if err_safe.size >= 2:
+            order = np.argsort(-err_safe)
+            row.second_worst_x = int(x_bits_all[order[1]])
+            row.second_worst_eps = float(err_safe[order[1]])
 
     return row
