@@ -103,6 +103,20 @@ class SweepRow:
     notes: list = field(default_factory=list)
 
 
+def _signed_finite_encodings(fmt: mf.Format) -> np.ndarray:
+    """Every finite representable value (normals + subnormals + zero) as
+    f64, both signs. Excludes only inf and NaN. Used by the validation-arm
+    exhaustive path at tiny formats so the candidate set matches what the
+    fp16+ joint_local_search effectively searches via bit-ULP neighborhood
+    steps. Reference-arm spec sheets keep the plan's strict positive-
+    normal-only set via `lowbit._signed_positive_normals`."""
+    exp_max_biased = (1 << fmt.E) - 1  # all-ones exp → inf/NaN
+    all_bits = np.arange(1 << fmt.width, dtype=np.uint32)
+    biased_e = (all_bits >> fmt.M) & ((1 << fmt.E) - 1)
+    finite = all_bits[biased_e != exp_max_biased]
+    return mf.bits_to_float(finite, fmt).astype(np.float64)
+
+
 def _format_seed(fmt: mf.Format) -> int:
     """Deterministic per-format RNG seed."""
     h = hashlib.blake2s(
@@ -406,11 +420,19 @@ def phase1_row(fmt: mf.Format, *, format_name: str = "") -> SweepRow:
 
     # B2 / B3 ladder step 4: eps_opt depends on format width per plan §B2.
     #  - fp4/fp6/fp8: exhaustive (K, c0, c1) via lowbit.tier_exhaustive.
-    #    True global optimum. eps_opt_kind = "exhaustive".
+    #    Validation arm expands the plan's "positive-normal encodings"
+    #    candidate set to "all finite encodings" (normals + subnormals +
+    #    zero, both signs). This matches what joint_local_search reaches
+    #    at fp16+ via bit-ULP stepping and gives a consistent eps_opt
+    #    semantics across widths. Reference-arm keeps the strict set.
     #  - fp16+: joint local search from the analytic seed, labeled "local".
     if fmt.width <= 8 and _HAVE_RUST:
         from . import lowbit
-        r = lowbit.tier_exhaustive(fmt, "rsqrt", "T1_gen")
+        coef_candidates = _signed_finite_encodings(fmt)
+        r = lowbit.tier_exhaustive(
+            fmt, "rsqrt", "T1_gen",
+            coef_candidates=coef_candidates,
+        )
         k_opt = r.K
         c0_opt_bits, c1_opt_bits = r.coefs_bits
         eps_opt = r.eps
