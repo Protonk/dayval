@@ -375,10 +375,9 @@ def phase1_row(fmt: mf.Format, *, format_name: str = "") -> SweepRow:
             best_cp = eps
     row.eps_real_plus_Cprime = best_cp
 
-    # B3 ladder step 3: best of the 9 refinement orderings with the
-    # (now-possibly-improved) coarse ordering. Kadlec's 7 factorings are
-    # deferred — see the plan; a column is reserved for them.
-    # Pick the coarse that won step 2.
+    # B3 ladder step 3: best of the 9 refinement orderings under the
+    # Newton-style refinement form with the (now-possibly-improved)
+    # coarse ordering. Pick the coarse that won step 2.
     best_ord = best_cp
     x_bits_full = mf.positive_normals_bits(fmt)
     for refine in frsr.REFINE_ORDERINGS:

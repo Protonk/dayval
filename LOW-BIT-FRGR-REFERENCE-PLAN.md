@@ -151,8 +151,10 @@ complexity:
 - **§9.2 shift order (rsqrt only)**: shift-then-subtract `K - (X>>1)`
   versus subtract-then-shift `(C' - X) >> 1` with `C' ∈ {2K, 2K+1}`.
   Does not apply to reciprocal since there's no shift.
-- **§9.2 product orderings**: 16 algebraically-equivalent orderings
-  of `c₁·x·y·y` and Kadlec's factored form.
+- **§9.2 product orderings**: 9 algebraically-equivalent orderings
+  of `c₁·x·y·y` under the Newton-style refinement form. (Day also
+  documents a non-Newton Kadlec-style factoring in §9.2; out of
+  scope for this project.)
 - **§9.3 parity choice**: for the FRSR magic-constant derivation,
   `s` even versus `s` odd.
 

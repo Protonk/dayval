@@ -317,15 +317,3 @@ fp32 is replication-only (Listing 5). fp24 deferred — `run_phase1.py --formats
 the expected direction from the plan; confirming it against fp24
 is the outstanding work.
 
-### Scope deltas from the original plan
-- **Kadlec 7 orderings stubbed.** §9.2 has 16 ordering variants; my
-  kernel implements the 9 simple ones plus 3 coarse variants, giving
-  an 18-config enumeration for the B3 step-3 column. The 7 Kadlec
-  variants each require deriving `(c₀′, c₁′)` so that
-  `w · (c₀′ − P(x, y, w))` equals `y · (c₀ + c₁ · x · y²)` under
-  `w = c₁′ · y`; left as a follow-up. Current B3 step-3 deltas in
-  `q2_ladder.csv` are thus lower bounds on the full Kadlec step.
-- **B4 second-worst witness.** The K-sweep records only the top
-  witness per K; second-worst x requires a follow-up single-K
-  re-evaluation and is currently emitted as 0. Cheap to add if the
-  analysis phase needs it.

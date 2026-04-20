@@ -1,10 +1,8 @@
 """Parametric FRSR kernel for Day (2023) validation.
 
 Implements the two coarse-approximation orderings from §9.2 and the nine
-multiplicative orderings of `c1 * x * y * y` from the same section. Kadlec-
-style factorings (w = c1' * y with 7 variants) are declared but not yet
-implemented — Phase 1 can produce ablation-table columns 1, 2, and a partial
-step 3 without them.
+multiplicative orderings of `c1 * x * y * y` from the same section, all
+within the Newton-style refinement family.
 
 All arithmetic is done by the software harness in `minifloat.py`: values are
 decoded to float64, operated upon, and RNE-rounded to the target format after
