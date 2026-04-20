@@ -1,5 +1,9 @@
 sources/Generalising the Fast Reciprocal Square Root Algorithm 2023.pdf
 sources/day2023.pdf
+sources/day2023-src.tar.gz
+sources/*.tex
+sources/*.eps
+sources/*.bbl
 
 __pycache__/
 *.pyc
@@ -9,6 +13,8 @@ venv/
 *.egg-info/
 build/
 dist/
+target/
+Cargo.lock
 
 results/
 *.csv
