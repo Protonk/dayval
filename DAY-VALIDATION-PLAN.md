@@ -240,5 +240,92 @@ Eshed Schacham, "16-bit Fast Inverse Square Root," personal blog,
 [https://ashdnazg.github.io/articles/25/16-bit-Fast-Inverse-Square-Root](https://ashdnazg.github.io/articles/25/16-bit-Fast-Inverse-Square-Root),
 published 2025-08-23, reporting exhaustive brute-force
 `K_tuned = 0x59B7` with `ε ≈ 2.8 × 10⁻³`. Useful as a pipeline
-self-check at fp16. Not structurally required; A1/A2/A3 validated
-against fp32 is sufficient pipeline evidence. **Approve or drop?**
+self-check at fp16. Schacham's setup uses the **monic** Newton
+refinement `y · (1.5 − 0.5 · x · y²)` and an exhaustive K-only sweep;
+it is therefore a cross-check on the K-only / monic branch, not on
+the general (K, c₀, c₁) joint optimum that the primary table reports.
+Included as a gate (`test_schacham_fp16_monic`).
+
+## Implementation progress (2026-04-19)
+
+Phase A (A1–A4) is complete and gated. Phase B sweeps run on all
+in-scope formats except fp24 (deferred to a long-running job). A
+Rust kernel via PyO3 does the heavy lifting; a Python kernel with
+matching bit-exact RNE semantics acts as the reference.
+
+### Repo layout
+- `dayval/algorithm3.py` — exact-arithmetic Alg 3 (mpmath). Closed
+  form for `n=1` from eq (56); Remez iteration for `n ≥ 2`.
+- `dayval/minifloat.py` — parametric `(E, M, bias)` encode/decode,
+  RNE, positive-normal enumerator.
+- `dayval/frsr.py` — kernel with 3 coarse orderings (shift-then-sub,
+  sub-then-shift·2K, sub-then-shift·2K+1) × 9 refinement orderings.
+- `dayval/magic.py` — eq (62).
+- `dayval/sweep.py` — B1/B2/B3/B4 assembly.
+- `dayval/tables.py` — primary CSV + Q1/Q2/Q3 derived views.
+- `rust_kernel/` — PyO3 extension `dayval_rust` (≈580 M evals/s;
+  `quantize` implemented as pure bit manipulation, no `powi`).
+- `scripts/run_phase1.py` — driver; `results/` holds the CSVs.
+- `tests/` — 26 gates, all green (see below).
+
+### Gates that pass
+- Algorithm 3 at FRSR `(1, 2, 1)` s = −1 reproduces eq (57)
+  coefficients `c₀ ≈ 1.68191391`, `c₁ ≈ −0.703952009`.
+- Algorithm 3 at s = 0 reproduces the exact-rescaling values
+  `c₀ = c₀_{s=−1}/√2 ≈ 1.18929273`,
+  `c₁ = c₁_{s=−1}/(2√2) ≈ −0.24888462`.
+- Magic constant eq (62): `0x5F200000` (s = −1) and `0x5F600000`
+  (s = 0) at fp32.
+- Minifloat round-trips match `struct.pack` at fp32 and numpy's
+  `float16` at fp16; `fmul/fadd/fsub` match host fp32 bit-exactly.
+- FRSR kernel replicates Day Listing 5 bit-exactly against a
+  compiled C kernel (`-fno-fast-math -mno-fma`). Peak ε reproduces
+  `6.501791 × 10⁻⁴` at witness `x* = 0x01401a9f` over all positive
+  fp32 normals (verified by exhaustive C scan).
+- Schacham fp16 monic reproduces his `ε ≈ 2.8 × 10⁻³` at `K = 0x59B7`.
+
+### Corrections flagged by implementation
+- **Eq (57) ε last-digit typo.** Paper displays `ε ≈ 6.50070298 × 10⁻⁴`;
+  the true minimax value to 13 sf is `6.500702958850 × 10⁻⁴`, verified
+  by direct equioscillation check at 100 dps. Tests gate on the true
+  value; comment in `test_algorithm3.py` documents the discrepancy.
+- **Listing 5 coefficients in the rendered PDF are
+  unreadable-on-screen.** My initial PDF OCR produced `1.1891763f`
+  / `0.24885956f`; those do not reproduce `6.501791 × 10⁻⁴` (gives
+  `7.484 × 10⁻⁴`). The arxiv LaTeX source has
+  `1.1893165f` / `0.24889956f`, which do reproduce the published
+  peak exactly. The LaTeX source is kept in `sources/` alongside the
+  PDF.
+
+### Phase 1 primary-table snapshot (`results/primary.csv`)
+
+| fmt | K_{s=−1} | K_{s=0} | K_opt | winning s | ε_theory | ε_real(analytic) | ε_real(+C') | ε_real(+ord) | ε_real(+coef tune) | ε_opt |
+|---|---|---|---|---|---|---|---|---|---|---|
+| fp4 | 0x2 | 0x4 | 0x3 | 0 | 6.50e-4 | 8.37e-1 | 5.00e-1 | 5.00e-1 | 2.93e-1 | 2.93e-1 |
+| fp6 | 0x11 | 0x13 | 0x13 | 0 | 6.50e-4 | 1.18e-1 | 1.18e-1 | 1.18e-1 | 1.18e-1 | 1.18e-1 |
+| fp8 | 0x52 | 0x56 | 0x53 | −1 | 6.50e-4 | 9.86e-2 | 9.86e-2 | 9.86e-2 | 5.23e-2 | 5.23e-2 |
+| fp16 | 0x5900 | 0x5b00 | 0x5afe | 0 | 6.50e-4 | 1.70e-3 | 1.55e-3 | 1.55e-3 | 1.41e-3 | 1.41e-3 |
+| fp18 | 0x17200 | 0x17600 | 0x17603 | 0 | 6.50e-4 | 1.31e-3 | 1.31e-3 | 1.21e-3 | 1.12e-3 | 1.12e-3 |
+| fp20 | 0x5c800 | 0x5d800 | 0x5d7ff | 0 | 6.50e-4 | 8.02e-4 | 8.02e-4 | 8.02e-4 | 7.71e-4 | 7.71e-4 |
+| fp32 | 0x5f200000 | 0x5f600000 | 0x5f5fff00 | — | 6.50e-4 | 6.503e-4 | — | — | — | 6.501791e-4 |
+
+fp32 is replication-only (Listing 5). fp24 deferred — `run_phase1.py --formats fp24` runs it in ≈ 36 h on 32 cores; memory stays flat (single-K Rust path streams).
+
+### Q1 early read
+`ε_real(analytic) / ε_opt` trends cleanly toward 1 as `M` grows
+(2.86 → 1.88 → 1.21 → 1.18 → 1.04 → 1.00 for fp4 → fp32). This is
+the expected direction from the plan; confirming it against fp24
+is the outstanding work.
+
+### Scope deltas from the original plan
+- **Kadlec 7 orderings stubbed.** §9.2 has 16 ordering variants; my
+  kernel implements the 9 simple ones plus 3 coarse variants, giving
+  an 18-config enumeration for the B3 step-3 column. The 7 Kadlec
+  variants each require deriving `(c₀′, c₁′)` so that
+  `w · (c₀′ − P(x, y, w))` equals `y · (c₀ + c₁ · x · y²)` under
+  `w = c₁′ · y`; left as a follow-up. Current B3 step-3 deltas in
+  `q2_ladder.csv` are thus lower bounds on the full Kadlec step.
+- **B4 second-worst witness.** The K-sweep records only the top
+  witness per K; second-worst x requires a follow-up single-K
+  re-evaluation and is currently emitted as 0. Cheap to add if the
+  analysis phase needs it.
