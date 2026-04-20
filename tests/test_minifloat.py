@@ -79,12 +79,7 @@ def test_positive_normals_count():
 
 def test_lowbit_format_cardinalities():
     # IEEE-style enumeration: biased exp in [1, 2^E - 2], all mantissas.
-    # Matches LOW-BIT-FRGR-REFERENCE-PLAN for FP4 E2M1 / FP6 E3M2 / FP8 E4M3.
-    # Plan also lists FP6 E2M3 = 12 and FP8 E5M2 = 112, which appear to be
-    # typos (IEEE gives 16 and 120 respectively; OCP MX semantics would give
-    # even more because the all-ones exponent encodes normals too). We use
-    # the IEEE-style counts throughout; the discrepancy is flagged in the
-    # plan-update conversation.
+    # Matches the reference-arm format table (FRGR-PLAN.md).
     assert len(mf.positive_normals_bits(mf.FP4_E2M1)) == 4
     assert len(mf.positive_normals_bits(mf.FP6_E2M3)) == 16
     assert len(mf.positive_normals_bits(mf.FP6_E3M2)) == 24

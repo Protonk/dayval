@@ -58,9 +58,10 @@ class Format:
         return f"fp{self.width}(E={self.E},M={self.M},bias={self.bias})"
 
 
-# Day-plan formats (sign-exp-mantissa). FP6 and FP8 aliases below point at
-# the Day-plan layouts for backward compatibility; the OCP-MX production
-# formats have their own named entries.
+# Validation-arm formats (sign-exp-mantissa). FP6 and FP8 aliases below
+# point at the validation-arm layouts for backward compatibility; the
+# OCP-MX production formats used by the reference arm have their own
+# named entries.
 FP4 = Format(E=2, M=1, bias=1)               # MXFP4 / OCP E2M1
 FP6 = Format(E=3, M=2, bias=3)               # alias for FP6_E3M2
 FP8 = Format(E=4, M=3, bias=7)               # alias for FP8_E4M3
@@ -72,7 +73,7 @@ FP32 = Format(E=8, M=23, bias=127)
 
 BF16 = Format(E=8, M=7, bias=127)  # phase 2 but handy to declare
 
-# OCP Microscaling production formats for LOW-BIT-FRGR-REFERENCE-PLAN.
+# OCP Microscaling production formats for the reference arm (FRGR-PLAN.md).
 # FP8 E4M3 and E5M2 follow the Micikevicius et al. [2022] / OCP MX spec,
 # which diverges from strict IEEE at E4M3 (no ±inf, single-pattern NaN).
 # For FRSR/FRCP characterization those specials don't affect positive-

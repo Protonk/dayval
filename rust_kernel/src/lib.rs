@@ -281,7 +281,7 @@ fn parse_target(s: &str) -> Option<TargetFn> {
     }
 }
 
-/// Algorithm tier per LOW-BIT-FRGR-REFERENCE-PLAN §M2.
+/// Algorithm tier per FRGR-PLAN.md §B2 (reference arm).
 ///
 /// Each variant specifies: number of free coefficients and the functional
 /// form of the refinement. `z` = `x * y^b` in the target format (b=2 for

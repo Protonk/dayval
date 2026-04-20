@@ -1,5 +1,5 @@
-"""Run LOW-BIT-FRGR-REFERENCE-PLAN sweeps and emit spec sheets + cross-format
-summary CSVs.
+"""Run reference-arm sweeps (FRGR-PLAN.md) and emit spec sheets + cross-
+format summary CSVs.
 
 Usage:
     python scripts/run_lowbit.py [--formats fp4,fp6e2m3,fp6e3m2,fp8e4m3,fp8e5m2]

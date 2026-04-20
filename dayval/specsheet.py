@@ -1,4 +1,4 @@
-"""Per-format spec sheet emitter for LOW-BIT-FRGR-REFERENCE-PLAN.
+"""Per-format spec sheet emitter for the reference arm (FRGR-PLAN.md).
 
 Formats one sheet per format covering both rsqrt (1/√x) and reciprocal
 (1/x), per the plan's template. §9 implementation-variant ablation

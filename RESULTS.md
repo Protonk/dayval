@@ -1,13 +1,14 @@
 # Results — Day cross-validation and low-bit FRGR reference
 
-Two plans drive this codebase: `DAY-VALIDATION-PLAN.md` (cross-width
-validation of Day [2023]'s parity-indexed analytic family against
-finite-format optima) and `LOW-BIT-FRGR-REFERENCE-PLAN.md` (exhaustive
-spec sheets for `1/√x` and `1/x` at the five production low-bit float
-formats). They share a single software harness — a parametric
-`(E, M, bias)` IEEE-style floating-point implementation with explicit
-round-to-nearest-even at every op — and a PyO3 Rust kernel that runs
-at ~580 million kernel evaluations per second per core.
+The project (`FRGR-PLAN.md`) has two arms sharing one software
+harness: a **validation arm** that cross-checks Day [2023]'s parity-
+indexed analytic family against finite-format optima across widths,
+and a **reference arm** that produces exhaustive spec sheets for
+`1/√x` and `1/x` at the five production low-bit float formats. The
+harness is a parametric `(E, M, bias)` IEEE-style floating-point
+implementation with explicit round-to-nearest-even at every op,
+backed by a PyO3 Rust kernel that runs at ~580 million kernel
+evaluations per second per core.
 
 ## What was built
 
@@ -22,7 +23,7 @@ Every gate passes: 35 tests including a bit-exact match to a compiled
 C copy of Day Listing 5 and reproduction of `ε = 6.501791 × 10⁻⁴` at
 witness `x* = 0x01401a9f` over all 2.13 × 10⁹ positive fp32 normals.
 
-## Day cross-validation, Phase 1
+## Validation arm, Phase 1
 
 The primary table is in `results/primary.csv`, derived views in
 `results/q1_ratio.csv`, `results/q2_ladder.csv`, and
@@ -58,7 +59,7 @@ fp24 is the format where Day's paper would lead one to expect this to
 change, so the question is genuinely unanswered until that run
 completes.
 
-## Low-bit spec sheets
+## Reference arm: low-bit spec sheets
 
 The per-format sheets in `results/lowbit/` cover both rsqrt (`1/√x`)
 and reciprocal (`1/x`) at FP4 E2M1, FP6 E2M3, FP6 E3M2, FP8 E4M3,
@@ -130,18 +131,19 @@ The arxiv LaTeX source (downloaded and kept in `sources/`) has
 exactly at witness `x* = 0x01401a9f` (verified against a compiled C
 kernel with `-mno-fma -fno-fast-math`).
 
-**LOW-BIT plan target-formats table** listed FP6 E2M3 = 12 and FP8
-E5M2 = 112 positive normals, which disagree with both IEEE-style
-enumeration (16 / 120) and OCP MX semantics (24 / 120). Commit
-`89e8db3` corrects these and adds a paragraph clarifying the
-enumeration convention.
+**Reference-arm target-formats table** (originally in the standalone
+low-bit plan) listed FP6 E2M3 = 12 and FP8 E5M2 = 112 positive
+normals, which disagree with both IEEE-style enumeration (16 / 120)
+and OCP MX semantics (24 / 120). Commit `89e8db3` corrected these
+and added a paragraph clarifying the enumeration convention; that
+paragraph now lives in `FRGR-PLAN.md`.
 
 ## Outstanding
 
 Two items remain before the full deliverable set of either plan is
 complete:
 
-- **fp24** for the Day plan. Estimated 36 h on 32 cores with the
+- **fp24** for the validation arm. Estimated 36 h on 32 cores with the
   current Rust kernel; memory-flat single-K streaming path already
   verified at fp32. Ready to kick off whenever the machine can spare
   the CPU.
@@ -155,8 +157,8 @@ All results were produced from a clean checkout with Python 3.10,
 mpmath 1.4.1, numpy 2.2.6, and Rust 1.75. `.venv/bin/maturin develop
 --release` builds `dayval_rust`; `pytest tests/` runs all 35 gates
 (approximately 4 minutes, dominated by the fp32 kernel-replay test);
-`python scripts/run_phase1.py` regenerates the Day-plan primary
-table; `python scripts/run_lowbit.py` regenerates the low-bit spec
-sheets. The LaTeX source of Day [2023] is kept in `sources/` for
+`python scripts/run_phase1.py` regenerates the validation-arm primary
+table; `python scripts/run_lowbit.py` regenerates the reference-arm
+spec sheets. The LaTeX source of Day [2023] is kept in `sources/` for
 anyone who wants to verify the numerical checks against the paper's
 typeset equations.

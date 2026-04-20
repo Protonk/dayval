@@ -1,8 +1,8 @@
-"""Gates for LOW-BIT-FRGR-REFERENCE-PLAN tier kernels.
+"""Gates for reference-arm tier kernels (FRGR-PLAN.md §B2).
 
-- FRSR T1_gen exhaustive at fp8 E4M3 must recover the Day-plan Phase-1
-  optimum (eps = 5.234114e-2; matches the format floor — T1_gen saturates
-  here so higher tiers can't improve).
+- FRSR T1_gen exhaustive at fp8 E4M3 must recover the validation-arm
+  Phase-1 optimum (eps = 5.234114e-2; matches the format floor — T1_gen
+  saturates here so higher tiers can't improve).
 - FRCP T0_scale at fp4 E2M1: with 4 positive normals and 4 k candidates,
   the exhaustive sweep is 16 × 4 = 64 configurations; must terminate.
 - Reciprocal format floor is well-defined.

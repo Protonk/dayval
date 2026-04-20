@@ -1,5 +1,5 @@
-"""Phase B data collection: B1 analytic family, B2 optima, B3 ablation,
-B4 witnesses. See DAY-VALIDATION-PLAN.md for the primary-table schema.
+"""Phase B data collection (validation arm): B1 analytic family, B2 optima,
+B3 ablation, B4 witnesses. See FRGR-PLAN.md for the primary-table schema.
 
 Design:
 - Every sweep function takes a `Format` and returns a list of `RowPartial`

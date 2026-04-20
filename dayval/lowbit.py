@@ -1,8 +1,8 @@
-"""LOW-BIT-FRGR-REFERENCE-PLAN drivers.
+"""Reference-arm drivers (FRGR-PLAN.md Phase B).
 
-M1: format-intrinsic floors per (format, target function).
-M2: exhaustive tier optima per (format, target function, tier).
-M3: implementation-variant ablation on top of the best M2 tier.
+B0: format-intrinsic floors per (format, target function).
+B2: exhaustive tier optima per (format, target function, tier).
+B3: implementation-variant ablation on top of the best T1_gen tier.
 
 Uses the Rust extension `dayval_rust` for the exhaustive sweeps. Python
 orchestration is thin.
@@ -151,7 +151,7 @@ def tier_peak_single(
 # Δε from the baseline (canonical coarse + canonical refine ordering).
 # ---------------------------------------------------------------------------
 
-# The "canonical" T1_gen refine ordering per the LOW-BIT plan's assumption:
+# The "canonical" T1_gen refine ordering per FRGR-PLAN.md (reference arm):
 # xyyc1 matches Day Listing 5 at rsqrt; c1xy is the one-fewer-factor
 # analogue for reciprocal (there is no y² in the reciprocal refinement).
 CANONICAL_REFINE = {"rsqrt": "xyyc1", "recip": "c1xyy"}

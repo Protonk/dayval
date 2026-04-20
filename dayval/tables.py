@@ -1,7 +1,7 @@
 """Phase C: emit the primary CSV plus derived views.
 
 The primary table is keyed on (E, M, bias) and has the columns specified in
-DAY-VALIDATION-PLAN.md. Derived views:
+FRGR-PLAN.md (Phase C). Derived views:
 
 - `q1_ratio`: ε_real(analytic, winning s) / ε_opt as a function of (E, M).
 - `q2_ladder`: Δε per ablation-ladder step, per format.
